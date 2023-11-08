@@ -17,8 +17,6 @@ class PrepareDelivery
     delivery_weight = calculate_delivery_weight
     truck = find_truck_for_delivery(weight: delivery_weight)
 
-    validate_truck_presence!(truck)
-
     {
       status: :ok,
       truck: truck,
@@ -49,13 +47,9 @@ class PrepareDelivery
   end
 
   def find_truck_for_delivery(weight:)
-    TRUCK_MAX_WEIGHTS.keys.find { |truck| TRUCK_MAX_WEIGHTS[truck] > weight }
-  end
+    truck = TRUCK_MAX_WEIGHTS.keys.find { |truck| TRUCK_MAX_WEIGHTS[truck] > weight }
 
-  def validate_truck_presence!(truck)
-    return if TRUCK_MAX_WEIGHTS.keys.include?(truck)
-
-    raise ValidationError, 'Нет машины'
+    raise ValidationError, 'Нет машины' unless TRUCK_MAX_WEIGHTS.keys.include?(truck)
   end
 end
 
