@@ -15,7 +15,7 @@ class PrepareDelivery
     validate_delivery_address!
 
     delivery_weight = calculate_delivery_weight
-    truck = find_truck_for_delivery(weight: delivery_weight)
+    truck = find_truck_for_delivery(delivery_weight: delivery_weight)
 
     {
       status: :ok,
@@ -48,10 +48,14 @@ class PrepareDelivery
     @order.products.sum(&:weight)
   end
 
-  def find_truck_for_delivery(weight:)
-    truck = TRUCK_MAX_WEIGHTS.keys.find { |truck| TRUCK_MAX_WEIGHTS[truck] > weight }
+  def find_truck_for_delivery(delivery_weight:)
+    suitable_truck_weights = TRUCK_MAX_WEIGHTS.values.filter { |weight| weight > delivery_weight }
+    minimal_truck_weight = suitable_truck_weights.min
+    minimal_suitable_truck = TRUCK_MAX_WEIGHTS.keys.find { |truck| TRUCK_MAX_WEIGHTS[truck] == minimal_truck_weight }
 
-    raise ValidationError, 'Нет машины' unless TRUCK_MAX_WEIGHTS.keys.include?(truck)
+    raise ValidationError, 'Нет машины' unless TRUCK_MAX_WEIGHTS.keys.include?(minimal_suitable_truck)
+
+    minimal_suitable_truck
   end
 end
 
