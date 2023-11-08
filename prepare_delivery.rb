@@ -4,9 +4,8 @@ class PrepareDelivery
 
   TRUCK_MAX_WEIGHTS = { kamaz: 3000, gazel: 1000 }.freeze
 
-  def initialize(order, user)
+  def initialize(order)
     @order = order
-    @user = user
   end
 
   def perform(destination_address, delivery_date)
@@ -82,4 +81,4 @@ class Address
   end
 end
 
-PrepareDelivery.new(Order.new, OpenStruct.new).perform(Address.new, Date.tomorrow)
+PrepareDelivery.new(Order.new).perform(Address.new, Date.tomorrow)
