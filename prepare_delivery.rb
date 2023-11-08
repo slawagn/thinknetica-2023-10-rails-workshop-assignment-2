@@ -4,13 +4,15 @@ class PrepareDelivery
 
   TRUCK_MAX_WEIGHTS = { kamaz: 3000, gazel: 1000 }.freeze
 
-  def initialize(order)
+  def initialize(order, destination_address, delivery_date)
     @order = order
+    @destination_address = destination_address
+    @delivery_date = delivery_date
   end
 
-  def perform(destination_address, delivery_date)
-    validate_delivery_date!(delivery_date)
-    validate_delivery_address!(destination_address)
+  def perform
+    validate_delivery_date!
+    validate_delivery_address!
 
     delivery_weight = calculate_delivery_weight
     truck = find_truck_for_delivery(weight: delivery_weight)
@@ -22,7 +24,7 @@ class PrepareDelivery
       truck: truck,
       weight: delivery_weight,
       order_number: @order.id,
-      address: destination_address
+      address: @destination_address
     }
   rescue StandardError
     { status: :error }
@@ -30,14 +32,14 @@ class PrepareDelivery
 
   private
 
-  def validate_delivery_date!(delivery_date)
-    return if delivery_date > Time.current
+  def validate_delivery_date!
+    return if @delivery_date > Time.current
 
     raise ValidationError, 'Дата доставки уже прошла'
   end
 
-  def validate_delivery_address!(delivery_address)
-    return if delivery_address.city.present? && delivery_address.street.present? && delivery_address.house.present?
+  def validate_delivery_address!
+    return if @destination_address.city.present? && @destination_address.street.present? && @destination_address.house.present?
 
     raise ValidationError, 'Нет адреса'
   end
@@ -81,4 +83,4 @@ class Address
   end
 end
 
-PrepareDelivery.new(Order.new).perform(Address.new, Date.tomorrow)
+PrepareDelivery.new(Order.new, Address.new, Date.tomorrow).perform
