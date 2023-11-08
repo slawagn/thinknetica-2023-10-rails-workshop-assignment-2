@@ -40,8 +40,6 @@ class PrepareDelivery
     raise ValidationError, 'Не указан город' if @destination_address.city.empty?
     raise ValidationError, 'Не указана улица' if @destination_address.street.empty?
     raise ValidationError, 'Не указан дом' if @destination_address.house.empty?
-
-    raise ValidationError, 'Нет адреса'
   end
 
   def calculate_delivery_weight
