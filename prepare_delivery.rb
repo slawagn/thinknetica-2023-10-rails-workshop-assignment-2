@@ -45,7 +45,7 @@ class PrepareDelivery
   end
 
   def calculate_delivery_weight
-    @order.products.map(&:weight).sum
+    @order.products.sum(&:weight)
   end
 
   def find_truck_for_delivery(weight:)
