@@ -1,23 +1,59 @@
 class PrepareDelivery
-  TRUCKS = { kamaz: 3000, gazel: 1000 }
-
-  def initialize(order, user)
-    @order = order 
-    @user = user 
+  class ValidationError < StandardError
   end
 
-  def perform(destination_address, delivery_date)
-    result = { truck: nil, weight: nil, order_number: @order.id, address: destination_address, status: :ok }
-    raise "Дата доставки уже прошла" if delivery_date < Time.current
-    raise "Нет адреса" if destination_address.city.empty? || destination_address.street.empty? || destination_address.house.empty?
+  TRUCK_MAX_WEIGHTS = { kamaz: 3000, gazel: 1000 }.freeze
 
-    weight = @order.products.map(&:weight).sum
-    TRUCKS.keys.each { |key| result[:truck] = key if TRUCKS[key.to_sym] > weight }
-    raise "Нет машины" if result[:truck].nil?
+  def initialize(order, destination_address, delivery_date)
+    @order = order
+    @destination_address = destination_address
+    @delivery_date = delivery_date
+  end
 
-    result
+  def perform
+    validate_delivery_date!
+    validate_delivery_address!
+
+    delivery_weight = calculate_delivery_weight
+    truck = find_truck_for_delivery(delivery_weight: delivery_weight)
+
+    {
+      status: :ok,
+      truck: truck,
+      weight: delivery_weight,
+      order_number: @order.id,
+      address: @destination_address
+    }
   rescue StandardError
-     result[:satus] = "error"
+    { status: :error }
+  end
+
+  private
+
+  def validate_delivery_date!
+    return if @delivery_date > Time.current
+
+    raise ValidationError, 'Дата доставки уже прошла'
+  end
+
+  def validate_delivery_address!
+    raise ValidationError, 'Не указан город' if @destination_address.city.empty?
+    raise ValidationError, 'Не указана улица' if @destination_address.street.empty?
+    raise ValidationError, 'Не указан дом' if @destination_address.house.empty?
+  end
+
+  def calculate_delivery_weight
+    @order.products.sum(&:weight)
+  end
+
+  def find_truck_for_delivery(delivery_weight:)
+    suitable_truck_weights = TRUCK_MAX_WEIGHTS.values.filter { |weight| weight > delivery_weight }
+    minimal_truck_weight = suitable_truck_weights.min
+    minimal_suitable_truck = TRUCK_MAX_WEIGHTS.keys.find { |truck| TRUCK_MAX_WEIGHTS[truck] == minimal_truck_weight }
+
+    raise ValidationError, 'Нет машины' unless TRUCK_MAX_WEIGHTS.keys.include?(minimal_suitable_truck)
+
+    minimal_suitable_truck
   end
 end
 
@@ -33,16 +69,16 @@ end
 
 class Address
   def city
-    "Ростов-на-Дону"
+    'Ростов-на-Дону'
   end
 
   def street
-    "ул. Маршала Конюхова"
+    'ул. Маршала Конюхова'
   end
 
   def house
-    "д. 5"
+    'д. 5'
   end
 end
 
-PrepareDelivery.new(Order.new, OpenStruct.new).perform(Address.new, Date.tomorrow)
+PrepareDelivery.new(Order.new, Address.new, Date.tomorrow).perform
