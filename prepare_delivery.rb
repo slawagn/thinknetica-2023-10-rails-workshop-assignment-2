@@ -37,7 +37,9 @@ class PrepareDelivery
   end
 
   def validate_delivery_address!
-    return if @destination_address.city.present? && @destination_address.street.present? && @destination_address.house.present?
+    raise ValidationError, 'Не указан город' if @destination_address.city.empty?
+    raise ValidationError, 'Не указана улица' if @destination_address.street.empty?
+    raise ValidationError, 'Не указан дом' if @destination_address.house.empty?
 
     raise ValidationError, 'Нет адреса'
   end
